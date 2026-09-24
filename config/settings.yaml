@@ -1,0 +1,56 @@
+﻿# ============================================================================
+# Cattle Gate Counter - Master Configuration
+# ============================================================================
+
+# --- Camera / Video Source ---
+source:
+  type: "video"               # "video" | "rtsp" | "usb"
+  path: ""                     # Path to video file, RTSP URL, or USB device index
+  fps: 30                     # Expected FPS of the source
+
+# --- Detection (YOLOv8) ---
+detection:
+  weights: "models/weights/best.pt"  # Path to fine-tuned model weights
+  imgsz: 640                         # Inference image size
+  conf_thresh: 0.5                   # Minimum confidence for detection
+  iou_thresh: 0.45                   # NMS IoU threshold
+  device: "0"                        # "0" for GPU, "cpu" for CPU
+  classes: [0]                       # Single class: cattle
+
+# --- Tracking (ByteTrack) ---
+tracking:
+  track_high_thresh: 0.5     # High confidence detection threshold
+  track_low_thresh: 0.1      # Low confidence (still tracked, not discarded)
+  new_track_thresh: 0.6      # Minimum confidence to initialize a NEW track
+  track_buffer: 60           # Frames to keep lost track alive (~2s at 30fps)
+  match_thresh: 0.8          # IoU threshold for matching detections to tracks
+
+# --- Counting ---
+counting:
+  line_y: 0.5                # Counting line Y-position (0.0 = top, 1.0 = bottom, normalized)
+  direction: "top_to_bottom" # Exit direction: "top_to_bottom" | "bottom_to_top"
+  min_crossing_distance: 10  # Minimum pixels past line before counting (hysteresis)
+
+# --- Training ---
+training:
+  dataset_config: "data/mega_cattle.yaml"
+  epochs: 200
+  batch_size: 8              # Adjust for VRAM (GTX 1080 Ti: 8 for YOLOv8l)
+  imgsz: 640
+  optimizer: "AdamW"
+  lr0: 0.001
+  lrf: 0.01
+  warmup_epochs: 5
+  patience: 30               # Early stopping patience
+  amp: true                  # Automatic Mixed Precision (essential for 1080 Ti)
+  mosaic: 1.0
+  mixup: 0.15
+  close_mosaic: 20
+
+# --- Output ---
+output:
+  display: true              # Show live video with overlays
+  save_video: false           # Save annotated video to disk
+  save_path: "output/"
+  log_counts: true            # Log counts to CSV
+  log_path: "output/counts.csv"
